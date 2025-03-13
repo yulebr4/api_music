@@ -15,6 +15,8 @@ namespace api_music.Model
         public string Artista { get; set; }
         public string Letra { get; set; }
 
+        public string ImagenUrl { get; set; }
+
     }
 }
 

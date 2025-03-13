@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -29,7 +30,7 @@ namespace api_music
             InitializeComponent();
             _presenter = new CancionPresenter(this);
 
-          
+
         }
 
 
@@ -46,7 +47,7 @@ namespace api_music
             // Validar que ambos campos no estén vacíos
             if (string.IsNullOrEmpty(titulo) || string.IsNullOrEmpty(artista))
             {
-                MessageBox.Show("Por favor, ingrese el título y el artista.");
+                MessageBox.Show("Por favor, ingrese el título y el artista de la cancion que busca.");
                 return;
             }
 
@@ -54,7 +55,7 @@ namespace api_music
             // Llamar al presentador para buscar la canción de manera asíncrona
             await _presenter.BuscarCancionAsync(titulo, artista);
 
-        
+
             // Limpiar los TextBox después de la búsqueda
             txtTitulo.Clear();
             txtArtista.Clear();
@@ -72,7 +73,7 @@ namespace api_music
 
         public void MostrarCanciones(List<Cancion> canciones)
         {
-           
+
         }
 
 
@@ -82,8 +83,34 @@ namespace api_music
             MessageBox.Show(mensaje, "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+
+        private void label5_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        public void MostrarImagen(string imageUrl)
+        {
+            try
+            {
+                using (WebClient webClient = new WebClient())
+                {
+                    byte[] imageBytes = webClient.DownloadData(imageUrl);
+                    using (var ms = new System.IO.MemoryStream(imageBytes))
+                    {
+                        picAlbum.Image = Image.FromStream(ms);
+                    }
+                }
+            }
+            catch
+            {
+                MessageBox.Show("No se pudo cargar la imagen del álbum.");
+            }
         }
     }
+}
+    
+
 
 
 

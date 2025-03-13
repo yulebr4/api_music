@@ -6,6 +6,7 @@ using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 
 
@@ -18,7 +19,7 @@ namespace api_music.Model
 
         // Cliente HTTP para realizar solicitudes a la API
         private HttpClient Client;
-
+        private const string LastFmApiKey = "ca6bfd1c64c4ffe3160f1260f18b2975";
 
         /// Constructor de la clase CancionService.
         /// Inicializa una nueva instancia de HttpClient.
@@ -33,46 +34,53 @@ namespace api_music.Model
         {
             try
             {
-                // Construye la URL de la solicitud a la API
-                string url = $"https://api.lyrics.ovh/v1/{artista}/{titulo}";
+                // Obtener la letra de la canción desde Lyrics.ovh
+                string lyricsUrl = $"https://api.lyrics.ovh/v1/{artista}/{titulo}";
+                HttpResponseMessage lyricsResponse = await Client.GetAsync(lyricsUrl);
+                lyricsResponse.EnsureSuccessStatusCode();
+                string lyricsJson = await lyricsResponse.Content.ReadAsStringAsync();
+                var lyricsData = JsonConvert.DeserializeObject<dynamic>(lyricsJson);
 
+                // Obtener la imagen del álbum desde Last.fm
+                string imageUrl = await GetAlbumImageAsync(titulo, artista);
 
-                // Realiza una solicitud GET a la API
-                HttpResponseMessage response = await Client.GetAsync(url);
-
-                // Verifica si la respuesta es exitosa, de lo contrario lanza una excepción
-                response.EnsureSuccessStatusCode();
-
-
-                // Lee el contenido de la respuesta como una cadena JSON
-                string responseJson = await response.Content.ReadAsStringAsync();
-
-
-                // Deserializa el JSON de respuesta a un objeto dinámico
-                var jsonResponse = JsonConvert.DeserializeObject<dynamic>(responseJson);
-
-
-                // Verifica si la respuesta contiene la propiedad "lyrics"
-                if (jsonResponse["lyrics"] != null)
+                // Si encontramos la letra, retornamos el objeto Cancion
+                if (lyricsData["lyrics"] != null)
                 {
-
-                    // Retorna un objeto Cancion con los datos obtenidos
                     return new Cancion
                     {
                         Titulo = titulo,
                         Artista = artista,
-                        Letra = jsonResponse["lyrics"].ToString()
+                        Letra = lyricsData["lyrics"].ToString(),
+                        ImagenUrl = imageUrl
                     };
                 }
 
-                // Retorna null si no se encuentra la letra de la canción
                 return null;
             }
             catch
             {
-
-                // Retorna null en caso de error (por ejemplo, si la canción no se encuentra o hay un problema con la API)
                 return null;
+            }
+        }
+
+        private async Task<string> GetAlbumImageAsync(string titulo, string artista)
+        {
+            try
+            {
+                string lastFmUrl = $"http://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key={LastFmApiKey}&artist={artista}&track={titulo}&format=json";
+                HttpResponseMessage response = await Client.GetAsync(lastFmUrl);
+                response.EnsureSuccessStatusCode();
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                var data = JsonConvert.DeserializeObject<dynamic>(jsonResponse);
+
+                // Extraer la URL de la imagen (tamaño grande)
+                string imageUrl = data["track"]["album"]["image"][2]["#text"];
+                return string.IsNullOrEmpty(imageUrl) ? "https://via.placeholder.com/150" : imageUrl;
+            }
+            catch
+            {
+                return "https://via.placeholder.com/150"; // Imagen por defecto en caso de error
             }
         }
     }

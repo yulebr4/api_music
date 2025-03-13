@@ -35,8 +35,15 @@ namespace api_music.Presenter
 
             if (cancion != null)
 
+            {
+
                 // Si la canción se encuentra, muestra la letra en la vista
                 _view.MostrarLetra(cancion);
+                _view.MostrarImagen(cancion.ImagenUrl);
+
+
+            }
+
             else
 
                 // Si la canción no se encuentra, muestra un mensaje de error en la vista
